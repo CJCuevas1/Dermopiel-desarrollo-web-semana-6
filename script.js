@@ -1,153 +1,99 @@
-// --- 1. SELECCIÓN DE ELEMENTOS DEL DOM ---
-const formulario = document.getElementById('formularioRegistro');
-const campoNombre = document.getElementById('campoNombre');
-const campoCategoria = document.getElementById('campoCategoria');
-const campoDescripcion = document.getElementById('campoDescripcion');
+// 1. Estructura de datos inicial utilizando un Arreglo de Objetos
+let productos = [
+    { nombre: "Serum Facial de Vitamina C", precio: 24.99, stock: 15 },
+    { nombre: "Crema Hidratante Profunda", precio: 18.50, stock: 0 },  // Producto agotado para probar la condición
+    { nombre: "Protector Solar SPF 50+", precio: 29.00, stock: 7 }
+];
 
-const listaRegistros = document.getElementById('listaRegistros');
-const contadorRegistros = document.getElementById('contadorRegistros');
-const alertaGlobal = document.getElementById('alertaGlobal');
+// 2. Captura de elementos del DOM
+const formulario = document.getElementById('formularioProducto');
+const contenedorProductos = document.getElementById('contenedorProductos');
+const mensajeEstado = document.getElementById('mensajeEstado');
 
-// Estado de la aplicación (Arreglo de objetos en memoria)
-let registros = [];
-
-// --- 2. FUNCIONES DE VALIDACIÓN INDIVIDUALES ---
-
-// Valida el campo Nombre (Obligatorio, min 3 letras)
-function validarNombre() {
-    const valor = campoNombre.value.trim();
-    if (valor === '' || valor.length < 3) {
-        marcarInvalido(campoNombre);
-        return false;
+// 3. Función para Renderizar dinámicamente los datos
+function renderizarProductos() {
+    // Limpiamos el contenedor para evitar duplicaciones innecesarias de HTML
+    contenedorProductos.innerHTML = "";
+    
+    // IMPLEMENTACIÓN DE CONDICIÓN: Evaluar el estado general de los datos
+    if (productos.length === 0) {
+        mensajeEstado.innerHTML = `<div class="alert alert-warning text-center">No hay registros disponibles en el inventario.</div>`;
+        return;
     } else {
-        marcarValido(campoNombre);
-        return true;
+        mensajeEstado.innerHTML = `<div class="alert alert-success text-center">Mostrando ${productos.length} producto(s) en tiempo real.</div>`;
     }
-}
 
-// Valida la Categoría (Debe seleccionar algo diferente al default)
-function validarCategoria() {
-    if (campoCategoria.value === '') {
-        marcarInvalido(campoCategoria);
-        return false;
-    } else {
-        marcarValido(campoCategoria);
-        return true;
-    }
-}
+    // IMPLEMENTACIÓN DE ESTRUCTURA REPETITIVA: Ciclo forEach para iterar los registros
+    productos.forEach((producto, indice) => {
+        
+        // CONDICIÓN INTERNA: Cambiar estilos y etiquetas según el stock disponible
+        let estadoStock = "";
+        let colorBorde = "";
+        
+        if (producto.stock > 0) {
+            estadoStock = `<span class="badge bg-success">Disponibles: ${producto.stock} uds</span>`;
+            colorBorde = "border-start border-success border-4";
+        } else {
+            estadoStock = `<span class="badge bg-danger">Agotado</span>`;
+            colorBorde = "border-start border-danger border-4";
+        }
 
-// Valida la Descripción (Obligatoria, min 10 caracteres)
-function validarDescripcion() {
-    const valor = campoDescripcion.value.trim();
-    if (valor === '' || valor.length < 10) {
-        marcarInvalido(campoDescripcion);
-        return false;
-    } else {
-        marcarValido(campoDescripcion);
-        return true;
-    }
-}
-
-// Funciones auxiliares para aplicar clases visuales de Bootstrap
-function marcarInvalido(elemento) {
-    elemento.classList.remove('is-valid');
-    elemento.classList.add('is-invalid');
-}
-
-function marcarValido(elemento) {
-    elemento.classList.remove('is-invalid');
-    elemento.classList.add('is-valid');
-}
-
-// Limpia los estilos de validación del formulario
-function resetearEstilosValidacion() {
-    [campoNombre, campoCategoria, campoDescripcion].forEach(elemento => {
-        elemento.classList.remove('is-valid', 'is-invalid');
+        // Generación dinámica del bloque HTML sin repetirlo manualmente
+        const tarjetaHTML = `
+            <div class="col-sm-6">
+                <div class="card h-100 shadow-sm ${colorBorde}">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div>
+                            <h5 class="card-title text-dark fw-bold">${producto.nombre}</h5>
+                            <p class="card-text text-primary fs-5 fw-semibold">$${producto.precio.toFixed(2)}</p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            ${estadoStock}
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarProducto(${indice})">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        contenedorProductos.innerHTML += tarjetaHTML;
     });
 }
 
-// --- 3. MANEJO DE EVENTOS EN TIEMPO REAL (input / blur) ---
-// Se ejecutan dinámicamente mientras el usuario escribe o sale del campo
-campoNombre.addEventListener('input', validarNombre);
-campoNombre.addEventListener('blur', validarNombre);
+// 4. Gestión del formulario y Conservación de Validaciones Dinámicas (Semana 6)
+formulario.addEventListener('submit', function(event) {
+    event.preventDefault(); // Detiene el refresco de página automático
 
-campoCategoria.addEventListener('change', validarCategoria);
-campoCategoria.addEventListener('blur', validarCategoria);
+    // Activa los estilos visuales de validación de Bootstrap
+    formulario.classList.add('was-validated');
 
-campoDescripcion.addEventListener('input', validarDescripcion);
-campoDescripcion.addEventListener('blur', validarDescripcion);
+    // Comprobamos si todos los campos cumplen las condiciones requeridas (HTML5 nativo)
+    if (formulario.checkValidity()) {
+        const nombreInput = document.getElementById('nombre').value;
+        const precioInput = parseFloat(document.getElementById('precio').value);
+        const stockInput = parseInt(document.getElementById('stock').value);
 
+        // Agregamos el nuevo objeto al arreglo de datos
+        productos.push({
+            nombre: nombreInput,
+            precio: precioInput,
+            stock: stockInput
+        });
 
-// --- 4. CONTROL DEL EVENTO SUBMIT ---
-formulario.addEventListener('submit', function(evento) {
-    // Evita que la página se recargue por defecto
-    evento.preventDefault();
+        // Re-renderizamos para actualizar el catálogo dinámicamente
+        renderizarProductos();
 
-    // Forzar la validación de todos los campos antes de registrar
-    const nombreOk = validarNombre();
-    const categoriaOk = validarCategoria();
-    const descripcionOk = validarDescripcion();
-
-    // Si todas las validaciones pasan exitosamente
-    if (nombreOk && categoriaOk && descripcionOk) {
-        
-        // Crear el nuevo objeto de registro
-        const nuevoRegistro = {
-            id: Date.now(), // ID único basado en tiempo
-            nombre: campoNombre.value.trim(),
-            categoria: campoCategoria.value,
-            descripcion: campoDescripcion.value.trim()
-        };
-
-        // Agregar al arreglo de datos
-        registros.push(nuevoRegistro);
-
-        // Actualizar la interfaz
-        actualizarInterfaz();
-
-        // Mostrar alerta de éxito
-        alertaGlobal.classList.remove('d-none');
-        setTimeout(() => {
-            alertaGlobal.classList.add('d-none');
-        }, 3000);
-
-        // Resetear el formulario y sus estilos
+        // Limpieza y reinicio del estado de validación del formulario
         formulario.reset();
-        resetearEstilosValidacion();
+        formulario.classList.remove('was-validated');
     }
 });
 
-// --- 5. OPERACIONES DEL CRUD (Mostrar, Contar, Eliminar) ---
-
-function actualizarInterfaz() {
-    // 1. Limpiar el contenedor actual de la tabla
-    listaRegistros.innerHTML = '';
-
-    // 2. Renderizar los registros actualizados
-    registros.forEach(reg => {
-        const fila = document.createElement('tr');
-        
-        fila.innerHTML = `
-            <td><strong>${reg.nombre}</strong></td>
-            <td><span class="badge bg-secondary">${reg.categoria}</span></td>
-            <td>${reg.descripcion}</td>
-            <td>
-                <button class="btn btn-danger btn-sm" onclick="eliminarRegistro(${reg.id})">
-                    Eliminar
-                </button>
-            </td>
-        `;
-        listaRegistros.appendChild(fila);
-    });
-
-    // 3. Actualizar el contador dinámico
-    contadorRegistros.textContent = registros.length;
+// Función adicional para remover un producto del arreglo y actualizar la vista
+function eliminarProducto(indice) {
+    productos.splice(indice, 1);
+    renderizarProductos();
 }
 
-// Función global para eliminar registros de la lista
-window.eliminarRegistro = function(id) {
-    // Filtramos el arreglo para excluir el id seleccionado
-    registros = registros.filter(reg => reg.id !== id);
-    // Volvemos a pintar la interfaz y actualizar el contador
-    actualizarInterfaz();
-};
+// Renderizado inicial una vez que el documento HTML esté completamente cargado
+document.addEventListener('DOMContentLoaded', renderizarProductos);
